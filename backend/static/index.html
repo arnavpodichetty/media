@@ -1,0 +1,279 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Cross-Media Recommender</title>
+<style>
+  :root {
+    --bg: #0f1115;
+    --panel: #1a1d24;
+    --panel-2: #232732;
+    --border: #2d323d;
+    --text: #e6e8ec;
+    --muted: #9aa0ab;
+    --accent: #6c8cff;
+    --accent-2: #8a6cff;
+    --ok: #4ec9a5;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.5;
+  }
+  header {
+    padding: 20px 24px;
+    border-bottom: 1px solid var(--border);
+    background: linear-gradient(90deg, rgba(108,140,255,0.12), rgba(138,108,255,0.12));
+  }
+  header h1 { margin: 0; font-size: 20px; }
+  header p { margin: 4px 0 0; color: var(--muted); font-size: 13px; }
+  .wrap { max-width: 1100px; margin: 0 auto; padding: 24px; }
+  .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; }
+  @media (max-width: 820px) { .grid { grid-template-columns: 1fr; } }
+  .card {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 18px;
+  }
+  .card h2 { margin: 0 0 14px; font-size: 15px; text-transform: uppercase; letter-spacing: 0.05em; color: var(--muted); }
+  .row { display: flex; gap: 8px; flex-wrap: wrap; }
+  select, input, button {
+    font: inherit;
+    background: var(--panel-2);
+    color: var(--text);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 9px 12px;
+  }
+  input { flex: 1; min-width: 140px; }
+  button {
+    cursor: pointer;
+    background: var(--accent);
+    border-color: var(--accent);
+    color: white;
+    font-weight: 600;
+    transition: filter 0.15s;
+  }
+  button:hover { filter: brightness(1.1); }
+  button:disabled { opacity: 0.5; cursor: not-allowed; }
+  button.ghost { background: var(--panel-2); color: var(--text); border-color: var(--border); font-weight: 500; }
+  button.small { padding: 5px 10px; font-size: 13px; }
+  .item {
+    display: flex;
+    gap: 12px;
+    padding: 10px;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    margin-bottom: 10px;
+    background: var(--panel-2);
+  }
+  .item img { width: 54px; height: 78px; object-fit: cover; border-radius: 6px; background: #333; flex-shrink: 0; }
+  .item .meta { flex: 1; min-width: 0; }
+  .item .title { font-weight: 600; }
+  .item .sub { color: var(--muted); font-size: 13px; }
+  .badge {
+    display: inline-block;
+    font-size: 11px;
+    padding: 2px 7px;
+    border-radius: 20px;
+    background: rgba(108,140,255,0.18);
+    color: var(--accent);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    margin-right: 6px;
+  }
+  .why { font-size: 13px; color: #c7ccd6; margin-top: 6px; font-style: italic; }
+  .status { font-size: 13px; color: var(--muted); min-height: 18px; margin-top: 8px; }
+  .status.err { color: #ff8080; }
+  .status.ok { color: var(--ok); }
+  .rank {
+    font-weight: 700;
+    color: var(--accent-2);
+    width: 22px;
+    flex-shrink: 0;
+    text-align: center;
+    align-self: center;
+  }
+  .muted { color: var(--muted); font-size: 13px; }
+  .seedbar { display: flex; align-items: center; gap: 10px; margin-bottom: 14px; padding: 10px; border-radius: 10px; background: rgba(138,108,255,0.1); border: 1px solid var(--border); }
+  .spinner { display: inline-block; width: 14px; height: 14px; border: 2px solid var(--muted); border-top-color: var(--accent); border-radius: 50%; animation: spin 0.7s linear infinite; vertical-align: middle; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+</style>
+</head>
+<body>
+<header>
+  <h1>Cross-Media Recommendation Engine</h1>
+  <p>Search &amp; ingest titles, then get vibe-based recommendations across movies, TV, books, anime, manga, games &amp; music.</p>
+</header>
+
+<div class="wrap">
+  <div class="grid">
+    <!-- LEFT: search + ingest -->
+    <div class="card">
+      <h2>1 · Search &amp; Ingest</h2>
+      <div class="row">
+        <select id="medium">
+          <option value="movie">movie</option>
+          <option value="tv">tv</option>
+          <option value="book">book</option>
+          <option value="anime">anime</option>
+          <option value="manga">manga</option>
+          <option value="game">game</option>
+          <option value="music">music</option>
+        </select>
+        <input id="query" placeholder="e.g. Blade Runner" />
+        <button id="searchBtn">Search</button>
+      </div>
+      <div id="searchStatus" class="status"></div>
+      <div id="searchResults"></div>
+    </div>
+
+    <!-- RIGHT: library + recommendations -->
+    <div class="card">
+      <h2>2 · Library &amp; Recommendations</h2>
+      <div class="row" style="margin-bottom:10px;">
+        <button id="refreshBtn" class="ghost small">Refresh library</button>
+        <span id="libCount" class="muted"></span>
+      </div>
+      <div id="recPanel"></div>
+      <div id="library"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+const $ = (id) => document.getElementById(id);
+const api = async (path, opts) => {
+  const res = await fetch(path, opts);
+  if (!res.ok) {
+    let detail = res.statusText;
+    try { detail = (await res.json()).detail || detail; } catch {}
+    throw new Error(detail);
+  }
+  return res.json();
+};
+const posterOr = (url) => url || "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='54' height='78'><rect width='100%' height='100%' fill='%23333'/></svg>";
+const esc = (s) => (s ?? "").replace(/[&<>\"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+
+// ---- Search & ingest ----
+async function doSearch() {
+  const medium = $("medium").value;
+  const query = $("query").value.trim();
+  if (!query) { setStatus("searchStatus", "Enter a search term.", "err"); return; }
+  setStatus("searchStatus", "Searching… <span class='spinner'></span>");
+  $("searchResults").innerHTML = "";
+  try {
+    const results = await api(`/api/search?medium=${encodeURIComponent(medium)}&query=${encodeURIComponent(query)}`);
+    setStatus("searchStatus", `${results.length} result(s).`);
+    $("searchResults").innerHTML = results.map((r, i) => `
+      <div class="item">
+        <img src="${posterOr(r.poster_url)}" />
+        <div class="meta">
+          <div class="title">${esc(r.title)} ${r.year ? `<span class="sub">(${r.year})</span>` : ""}</div>
+          <div class="sub">${esc(r.source)} · ${esc(r.source_id)}</div>
+          ${r.already_ingested ? `<span class="badge" style="background:rgba(78,201,165,0.18);color:var(--ok)">in library</span>` : ""}
+          <div style="margin-top:6px;">
+            <button class="small ingestBtn" data-medium="${medium}" data-source="${esc(r.source)}" data-id="${esc(r.source_id)}" ${r.already_ingested ? "disabled" : ""}>
+              ${r.already_ingested ? "Ingested" : "Ingest (AI profile)"}
+            </button>
+          </div>
+        </div>
+      </div>`).join("");
+    document.querySelectorAll(".ingestBtn").forEach((btn) => btn.addEventListener("click", () => doIngest(btn)));
+  } catch (e) {
+    setStatus("searchStatus", "Search failed: " + e.message, "err");
+  }
+}
+
+async function doIngest(btn) {
+  btn.disabled = true;
+  const original = btn.textContent;
+  btn.innerHTML = "Generating profile… <span class='spinner'></span>";
+  try {
+    await api("/api/ingest", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ medium: btn.dataset.medium, source: btn.dataset.source, source_id: btn.dataset.id }),
+    });
+    btn.textContent = "Ingested ✓";
+    loadLibrary();
+  } catch (e) {
+    btn.disabled = false;
+    btn.textContent = original;
+    setStatus("searchStatus", "Ingest failed: " + e.message, "err");
+  }
+}
+
+// ---- Library ----
+async function loadLibrary() {
+  try {
+    const items = await api("/api/items");
+    $("libCount").textContent = `${items.length} items`;
+    $("library").innerHTML = items.map((it) => `
+      <div class="item">
+        <img src="${posterOr(it.poster_url)}" />
+        <div class="meta">
+          <div class="title">${esc(it.title)} ${it.year ? `<span class="sub">(${it.year})</span>` : ""}</div>
+          <div class="sub"><span class="badge">${esc(it.medium)}</span>${esc(it.logline)}</div>
+          <div style="margin-top:6px;">
+            <button class="small recBtn" data-id="${it.id}" data-title="${esc(it.title)}">Recommend similar</button>
+          </div>
+        </div>
+      </div>`).join("");
+    document.querySelectorAll(".recBtn").forEach((btn) => btn.addEventListener("click", () => doRecommend(btn.dataset.id, btn.dataset.title)));
+  } catch (e) {
+    $("library").innerHTML = `<div class="status err">Failed to load library: ${e.message}</div>`;
+  }
+}
+
+// ---- Recommend ----
+async function doRecommend(itemId, title) {
+  $("recPanel").innerHTML = `<div class="seedbar"><span class="spinner"></span> Finding matches for <b>${esc(title)}</b>… (local AI reranking, ~10s)</div>`;
+  try {
+    const data = await api("/api/recommend", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ item_id: Number(itemId), limit: 8, candidate_pool_size: 20 }),
+    });
+    const recs = data.recommendations.map((r) => `
+      <div class="item">
+        <div class="rank">#${r.rank}</div>
+        <img src="${posterOr(r.item.poster_url)}" />
+        <div class="meta">
+          <div class="title">${esc(r.item.title)} ${r.item.year ? `<span class="sub">(${r.item.year})</span>` : ""}</div>
+          <div class="sub"><span class="badge">${esc(r.item.medium)}</span> distance ${r.vector_distance.toFixed(3)}</div>
+          <div class="why">${esc(r.why_this_matches)}</div>
+        </div>
+      </div>`).join("");
+    $("recPanel").innerHTML = `
+      <div class="seedbar">
+        <b>Similar to ${esc(data.seed.title)}</b>
+        <span class="badge" style="${data.reranked ? "" : "background:rgba(255,128,128,0.18);color:#ff8080"}">
+          ${data.reranked ? "AI reranked" : "vector-only fallback"}
+        </span>
+        <button class="ghost small" onclick="document.getElementById('recPanel').innerHTML=''">clear</button>
+      </div>
+      ${recs || '<div class="muted">No recommendations (need more items in the library).</div>'}`;
+  } catch (e) {
+    $("recPanel").innerHTML = `<div class="status err">Recommend failed: ${e.message}</div>`;
+  }
+}
+
+function setStatus(id, html, cls) {
+  const el = $(id);
+  el.className = "status" + (cls ? " " + cls : "");
+  el.innerHTML = html;
+}
+
+$("searchBtn").addEventListener("click", doSearch);
+$("query").addEventListener("keydown", (e) => { if (e.key === "Enter") doSearch(); });
+$("refreshBtn").addEventListener("click", loadLibrary);
+loadLibrary();
+</script>
+</body>
+</html>

@@ -1,0 +1,55 @@
+# ---- Secrets / environment ----
+.env
+.env.*
+!.env.example
+*.key
+*.pem
+
+# ---- Local LLM models & caches (multi-GB, never commit) ----
+models/
+*.gguf
+*.bin
+*.safetensors
+.cache/
+**/.cache/huggingface/
+
+# ---- Python ----
+.venv/
+venv/
+env/
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+.eggs/
+build/
+dist/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.ipynb_checkpoints/
+
+# ---- App runtime artifacts ----
+seed_progress.json
+*.log
+
+# ---- Node / frontend (for the upcoming React app) ----
+node_modules/
+.next/
+.vite/
+frontend/dist/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# ---- OS ----
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# ---- Editors / IDEs ----
+.vscode/
+.idea/
+*.swp
+*~
