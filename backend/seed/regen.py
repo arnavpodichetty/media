@@ -17,6 +17,7 @@ Usage (from backend/, venv activated):
 
 import argparse
 import asyncio
+import sys
 import time
 
 from sqlalchemy import select
@@ -27,6 +28,12 @@ from app.models import Item
 from app.pipeline import SOURCE_MODULES
 from app.services import llm
 from app.services.embeddings import embed_text
+
+# Windows consoles default to cp1252; titles/loglines often contain unicode.
+if hasattr(sys.stdout, "reconfigure"):
+    sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+if hasattr(sys.stderr, "reconfigure"):
+    sys.stderr.reconfigure(encoding="utf-8", errors="replace")
 
 LLM_MIN_INTERVAL_SECONDS = settings.llm_min_interval_seconds
 SOURCE_MIN_INTERVAL_SECONDS = 0.5
@@ -80,8 +87,18 @@ async def main() -> None:
         print(f"Regenerating {len(items)} item(s){' from cached metadata' if args.from_cache else ''}...\n")
         done = failed = 0
         llm_last_call = 0.0
+        item_ids = [item.id for item in items]
 
-        for item in items:
+        for item_id in item_ids:
+            # Fresh fetch each iteration so a rollback after a failure doesn't
+            # leave us with an expired/detached ORM object on the next pass.
+            item = await db.get(Item, item_id)
+            if item is None:
+                failed += 1
+                print(f"[?] FAIL id={item_id}: row missing")
+                continue
+
+            label_medium, label_title = item.medium, item.title
             try:
                 elapsed = time.monotonic() - llm_last_call
                 if elapsed < LLM_MIN_INTERVAL_SECONDS:
@@ -92,12 +109,12 @@ async def main() -> None:
                 llm_last_call = time.monotonic()
 
                 done += 1
-                print(f"[{item.medium}] OK   id={item.id} {item.title!r}")
+                print(f"[{label_medium}] OK   id={item_id} {label_title!r}")
                 print(f"           logline: {item.logline}")
             except Exception as exc:  # noqa: BLE001 - must survive per-item failures
                 await db.rollback()
                 failed += 1
-                print(f"[{item.medium}] FAIL id={item.id} {item.title!r}: {exc}")
+                print(f"[{label_medium}] FAIL id={item_id} {label_title!r}: {exc}")
 
         print(f"\nRegen complete. updated={done} failed={failed}")
 
