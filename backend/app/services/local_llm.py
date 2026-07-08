@@ -70,7 +70,9 @@ async def generate_taste_profile(medium: str, title: str, raw_metadata: dict) ->
         user=build_taste_prompt(medium, title, raw_metadata),
         schema_name="TasteProfile",
         schema=TasteProfile.model_json_schema(),
-        temperature=0.5,
+        # Lower temperature keeps output length/format consistent across items
+        # (higher values were producing wildly varying logline/embedding lengths).
+        temperature=0.3,
     )
     return TasteProfile.model_validate(parsed)
 

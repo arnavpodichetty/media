@@ -102,7 +102,10 @@ def summarize_metadata(medium: str, details: dict) -> dict:
         "tags": tags,
         "track_list": tracks,
         "listeners": details.get("listeners"),
-        "wiki_summary": wiki_summary,
+        # Keyed as "description" across every source for consistency. Albums
+        # often have no wiki text; when empty the LLM describes the sound from
+        # the tags/tracklist per the logline instructions.
+        "description": wiki_summary,
     }
 
 

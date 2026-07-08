@@ -79,7 +79,9 @@ def summarize_metadata(medium: str, details: dict) -> dict:
     return {
         "title": title,
         "release_date": date_field,
-        "overview": details.get("overview"),
+        # Keyed as "description" across every source so the LLM always knows
+        # which field is the canonical plot/premise text.
+        "description": details.get("overview"),
         "genres": genres,
         "keywords": keywords,
         "runtime_minutes": runtime,

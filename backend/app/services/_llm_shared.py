@@ -13,9 +13,17 @@ medium-agnostic way, so it can be meaningfully compared to works in totally \
 different mediums based on vibe rather than surface genre labels.
 
 Be specific and avoid generic filler (e.g. prefer "quiet grief processed through \
-routine" over "sad"). The embedding_text field is the most important output: write \
-it as a flowing natural-language paragraph (not a tag list), since it is what gets \
-embedded and compared for similarity search."""
+routine" over "sad").
+
+Two fields have STRICT length rules — follow them exactly for EVERY item, no matter \
+how much or how little source metadata you are given:
+- logline: exactly ONE sentence, at most ~25 words. It is shown to users. It must state \
+  the premise/subject drawn from the source description. Never write a paragraph here, \
+  never use multiple sentences, and never just list genres/tags. For music (which has no \
+  plot) describe the sound/subject in one sentence instead.
+- embedding_text: exactly 4-5 sentences (~90-130 words), a single flowing paragraph (not \
+  a tag list). This is the most important field for matching. Keep its length consistent \
+  across items — do not write two sentences for a sparse item and ten for a rich one."""
 
 
 RERANK_SYSTEM_INSTRUCTION = """You are the re-ranking stage of a cross-medium taste-based \
